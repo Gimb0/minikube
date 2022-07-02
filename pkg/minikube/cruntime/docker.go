@@ -109,18 +109,18 @@ func (r *Docker) SocketPath() string {
 func (r *Docker) Available() error {
 	_, err := exec.LookPath("docker")
 	if err != nil {
-		return err
+		return errors.New("docker not available")
 	}
 
 	_, err = exec.LookPath("dockerd")
 	if err != nil {
-		return err
+		return errors.New("dockerd is not available")
 	}
 
 	if r.KubernetesVersion.Minor >= 24 && r.KubernetesVersion.Major == 1 {
 		_, err = exec.LookPath("cri-dockerd")
 		if err != nil {
-			return err
+			return errors.New("cri-dockerd is not available")
 		}
 	}
 

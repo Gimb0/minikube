@@ -108,7 +108,23 @@ func (r *Docker) SocketPath() string {
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
 	_, err := exec.LookPath("docker")
-	return err
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.LookPath("dockerd")
+	if err != nil {
+		return err
+	}
+
+	if r.KubernetesVersion.Minor >= 24 && r.KubernetesVersion.Major == 1 {
+		_, err = exec.LookPath("cri-dockerd")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Active returns if docker is active on the host

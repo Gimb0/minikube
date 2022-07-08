@@ -108,7 +108,7 @@ else
 fi
 
 # let's just clean all docker artifacts up
-docker system prune --force --volumes || true
+docker system prune -a --volumes -f || true
 docker system df || true
 
 echo ">> Starting at $(date)"
@@ -421,7 +421,7 @@ if ! type "jq" > /dev/null; then
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-${OS_ARCH}"
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-${OS_ARCH}"
 sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
 
 

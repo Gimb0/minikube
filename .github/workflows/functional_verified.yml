@@ -22,7 +22,7 @@ on:
       - deleted
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18.2'
+  GO_VERSION: '1.18.3'
 
 permissions:
   contents: read
@@ -35,10 +35,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -47,7 +46,7 @@ jobs:
           sudo apt-get install -y libvirt-dev
           MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: minikube_binaries
           path: out
@@ -87,14 +86,14 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/arm64/kubectl
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/arm64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
 
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-arm64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
 
       - name: Docker Info
@@ -115,10 +114,9 @@ jobs:
           echo "--------------------------"
           hostname || true
           echo "--------------------------"
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
 
       - name: Download Binaries
         uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
@@ -130,7 +128,7 @@ jobs:
         run: |
           minikube_binaries/minikube-linux-arm64 delete --all --purge || true
           docker kill $(docker ps -aq) || true
-          docker system prune --volumes --force || true
+          docker system prune -a --volumes -f || true
 
       - name: Run Integration Test
         continue-on-error: false
@@ -167,7 +165,7 @@ jobs:
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_docker_ubuntu_arm64
           path: minikube_binaries/report
@@ -211,7 +209,7 @@ jobs:
         run: |
           mkdir -p all_reports
           cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: all_reports
           path: all_reports

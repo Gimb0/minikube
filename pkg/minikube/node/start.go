@@ -97,7 +97,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 	if stopk8s {
 		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
-		configureRuntimes(starter.Runner, *starter.Cfg, nv)
+		cr := configureRuntimes(starter.Runner, *starter.Cfg, nv)
+
+		showNoK8sVersionInfo(cr)
+
 		configureMounts(&wg, *starter.Cfg)
 		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
@@ -253,15 +256,6 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, err
 	}
 
-	// Tunnel apiserver to guest, if needed
-	if starter.Cfg.APIServerPort != 0 {
-		args := []string{"-f", "-NTL", fmt.Sprintf("%d:localhost:8443", starter.Cfg.APIServerPort)}
-		err := machine.CreateSSHShell(starter.MachineAPI, *starter.Cfg, *starter.Node, args, false)
-		if err != nil {
-			klog.Warningf("apiserver tunnel failed: %v", err)
-		}
-	}
-
 	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
 	if err := kubeconfig.Update(kcs); err != nil {
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
@@ -339,7 +333,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 
 	// Be explicit with each case for the sake of translations
 	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
-		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes in cluster {{.cluster}}", out.V{"cluster": cc.Name})
 	} else {
 		if apiServer {
 			out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
@@ -606,7 +600,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		return host, exists, nil
 	}
 	klog.Warningf("error starting host: %v", err)
-	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
+	// NOTE: People get very cranky if you delete their preexisting VM. Only delete new ones.
 	if !exists {
 		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {
